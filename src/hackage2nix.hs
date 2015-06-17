@@ -169,6 +169,9 @@ generatePackageSet config hackage nixpkgs = do
           systemDependencies :: Set String
           systemDependencies = Set.map unDep $ mconcat [ drv'^.x.y | x <- [libraryDepends,executableDepends,testDepends], y <- [system,pkgconfig] ]
 
+          haskellOrSystemDependencies :: Set String
+          haskellOrSystemDependencies = Set.map unDep $ mconcat [ drv'^.x.tool | x <- [libraryDepends,executableDepends,testDepends] ]
+
           missing :: Set String
           missing = Set.filter (`Set.notMember` knownAttributesSet) haskellDependencies
 
@@ -176,7 +179,7 @@ generatePackageSet config hackage nixpkgs = do
           buildInputs = Map.unions
                         [ Map.fromList [ (n, Nothing) | n <- Set.toList missing ]
                         , Map.fromList [ (n, resolveNixpkgsAttribute nixpkgs n) | n <- Set.toAscList systemDependencies ]
-               --       , Map.fromList [ (n, resolveNixpkgsOrHackageAttribute nixpkgs hackage n) | n <- Set.toAscList Set.empty ] -- TODO: (buildTools drv) ]
+                        , Map.fromList [ (n, resolveHackageThenNixpkgsAttribute nixpkgs hackage n) | n <- Set.toAscList haskellOrSystemDependencies ]
                         ]
 
           systemOverrides :: Doc
@@ -208,11 +211,11 @@ generatePackageSet config hackage nixpkgs = do
   liftIO $ mapM_ (\pkg -> putStrLn pkg >> putStrLn "") pkgs
   liftIO $ putStrLn "}"
 
--- resolveNixpkgsOrHackageAttribute :: Nixpkgs -> Hackage -> Attribute -> Maybe Path
--- resolveNixpkgsOrHackageAttribute nixpkgs hackage name
---   | p@(Just _) <- resolveNixpkgsAttribute nixpkgs name  = p
---   | Just _ <- Map.lookup name hackage                   = Just []
---   | otherwise                                           = Nothing
+resolveHackageThenNixpkgsAttribute :: Nixpkgs -> Hackage -> Attribute -> Maybe Path
+resolveHackageThenNixpkgsAttribute nixpkgs hackage name
+  | Just _ <- Map.lookup name hackage                   = Just []
+  | p@(Just _) <- resolveNixpkgsAttribute nixpkgs name  = p
+  | otherwise                                           = Nothing
 
 resolveNixpkgsAttribute :: Nixpkgs -> Attribute -> Maybe Path
 resolveNixpkgsAttribute nixpkgs name

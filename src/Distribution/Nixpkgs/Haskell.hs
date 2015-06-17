@@ -22,14 +22,15 @@ data BuildInfo = BuildInfo
   { _haskell :: Set Dependency
   , _pkgconfig :: Set Dependency
   , _system :: Set Dependency
+  , _tool :: Set Dependency
   }
   deriving (Show, Eq, Generic)
 
 makeLenses ''BuildInfo
 
 instance Monoid BuildInfo where
-  mempty = BuildInfo mempty mempty mempty
-  BuildInfo x1 y1 z1 `mappend` BuildInfo x2 y2 z2 = BuildInfo (x1 `mappend` x2) (y1 `mappend` y2) (z1 `mappend` z2)
+  mempty = BuildInfo mempty mempty mempty mempty
+  BuildInfo w1 x1 y1 z1 `mappend` BuildInfo w2 x2 y2 z2 = BuildInfo (w1 `mappend` w2) (x1 `mappend` x2) (y1 `mappend` y2) (z1 `mappend` z2)
 
 -- | A represtation of Nix expressions for building Haskell packages.
 -- The data type correspond closely to the definition of
@@ -114,6 +115,9 @@ instance Pretty Derivation where
                           , Set.map unDep (_pkgconfig _libraryDepends)
                           , Set.map unDep (_pkgconfig _executableDepends)
                           , Set.map unDep (_pkgconfig _testDepends)
+                          , Set.map unDep (_tool _libraryDepends)
+                          , Set.map unDep (_tool _executableDepends)
+                          , Set.map unDep (_tool _testDepends)
                           , Set.fromList ["fetch" ++ derivKind _src | derivKind _src /= "" && not isHackagePackage]
                           ]
 
@@ -138,6 +142,7 @@ pPrintBuildInfo prefix bi = vcat
   [ setattr (prefix++"HaskellDepends") (Set.map unDep (bi^.haskell))
   , setattr (prefix++"SystemDepends")  (Set.map unDep (bi^.system))
   , setattr (prefix++"PkgconfigDepends") (Set.map unDep (bi^.pkgconfig))
+  , setattr (prefix++"ToolDepends") (Set.map unDep (bi^.tool))
   ]
 
 unDep :: Dependency -> String

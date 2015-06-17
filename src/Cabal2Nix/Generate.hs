@@ -106,6 +106,7 @@ nullBuildInfo = Nix.BuildInfo
   { _haskell = error "undefined _haskell"
   , _pkgconfig = error "undefined _pkgconfig"
   , _system = error "undefined _system"
+  , _tool = error "undefined _tool"
   }
 
 nullMeta :: Nix.Meta
@@ -122,7 +123,6 @@ nullMeta = Nix.Meta
 convertBuildInfo :: Cabal.BuildInfo -> Nix.BuildInfo
 convertBuildInfo Cabal.BuildInfo {..} = nullBuildInfo
   & haskell .~ Set.fromList targetBuildDepends
-  & system .~ Set.unions [ Set.fromList [ Dependency (PackageName y) anyVersion | Dependency (PackageName x) _ <- buildTools, y <- buildToolNixName x, not (null y) ]
-                         , Set.fromList [ Dependency (PackageName y) anyVersion | x <- extraLibs, y <- libNixName x, not (null y) ]
-                         ]
+  & system .~ Set.fromList [ Dependency (PackageName y) anyVersion | x <- extraLibs, y <- libNixName x, not (null y) ]
   & pkgconfig .~ Set.fromList [ Dependency (PackageName y) anyVersion | Dependency (PackageName x) _ <- pkgconfigDepends, y <- libNixName x, not (null y) ]
+  & tool .~ Set.fromList [ Dependency (PackageName y) anyVersion | Dependency (PackageName x) _ <- buildTools, y <- buildToolNixName x, not (null y) ]
