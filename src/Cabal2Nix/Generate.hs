@@ -5,7 +5,7 @@ module Cabal2Nix.Generate ( cabal2nix, cabal2nix' ) where
 import Cabal2Nix.Flags
 import Cabal2Nix.Name
 import Cabal2Nix.Normalize
--- import Cabal2Nix.PostProcess
+import Cabal2Nix.PostProcess
 import Control.Lens
 -- import Data.Set.Lens
 -- import Control.Applicative
@@ -62,7 +62,7 @@ nullDerivation = MkDerivation
   }
 
 cabal2nix' :: PackageDescription -> Derivation
-cabal2nix' PackageDescription {..} = normalize $
+cabal2nix' PackageDescription {..} = normalize $ postProcess $
   let
     xrev = maybe 0 read (lookup "x-revision" customFieldsPD)
   in

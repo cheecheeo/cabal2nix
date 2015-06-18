@@ -1,12 +1,21 @@
 module Cabal2Nix.PostProcess ( postProcess ) where
 
--- import qualified Data.Set as Set
+import Control.Lens
+import Data.Maybe
 import Distribution.Nixpkgs.Haskell
--- import Distribution.Text ( display )
+import Distribution.Package
+import Distribution.Text
+import Distribution.Version
 
 postProcess :: Derivation -> Derivation
-postProcess = id {- postProcess' . fixGtkBuilds
+postProcess deriv = foldr ($) deriv [ f | (Dependency n vr, f) <- hooks, packageName deriv == n, packageVersion deriv `withinRange` vr ]
 
+hooks :: [(Dependency, Derivation -> Derivation)]
+hooks = over (mapped._1) (\str -> fromMaybe (error ("invalid constraint: " ++ show str)) (simpleParse str))
+  [ ("haddock", set phaseOverrides "preCheck = \"unset GHC_PACKAGE_PATH\";")
+  ]
+
+{-
 fixGtkBuilds :: Derivation -> Derivation
 fixGtkBuilds deriv@(MkDerivation {..}) = deriv { pkgConfDeps = pkgConfDeps `Set.difference` buildDepends }
 
@@ -52,7 +61,6 @@ postProcess' deriv@(MkDerivation {..})
   | pname == "gf"               = deriv { phaseOverrides = gfPhaseOverrides
                                         , doCheck = False }
   | pname == "GlomeVec"         = deriv { buildTools = Set.insert "llvm" buildTools }
-  | pname == "haddock"          = deriv { phaseOverrides = haddockPreCheck }
   | pname == "happy"            = deriv { buildTools = Set.insert "perl" buildTools }
   | pname == "haskeline"        = deriv { buildDepends = Set.insert "utf8-string" buildDepends }
   | pname == "haskell-src"      = deriv { buildTools = Set.insert "happy" buildTools }
@@ -255,4 +263,5 @@ gfPhaseOverrides = unlines
     -- The build step itself, after having built the library, needs to be able
     -- to find the library it just built in order to compile grammar files.
   ]
+
 -}
